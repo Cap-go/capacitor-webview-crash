@@ -1,0 +1,10 @@
+{
+  "appId": "app.capgo.webviewcrash.example",
+  "appName": "WebView Crash Demo",
+  "webDir": "dist",
+  "plugins": {
+    "SplashScreen": {
+      "launchAutoHide": false
+    }
+  }
+}

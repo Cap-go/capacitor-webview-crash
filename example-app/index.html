@@ -1,0 +1,42 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <title>WebView Crash Demo</title>
+    <link rel="stylesheet" href="/src/style.css" />
+  </head>
+  <body>
+    <div class="shell">
+      <header class="hero">
+        <p class="eyebrow">Capgo Capacitor WebView Crash</p>
+        <h1>Tell the next JS runtime that the previous WebView crashed.</h1>
+        <p class="lede">
+          The plugin persists a native crash marker, then exposes it through an event and a polling API after recovery.
+        </p>
+      </header>
+
+      <main class="grid">
+        <section class="card">
+          <h2>Actions</h2>
+          <div class="actions">
+            <button id="refresh">Refresh Pending State</button>
+            <button id="simulate">Simulate Recovery</button>
+            <button id="clear">Clear Pending Marker</button>
+          </div>
+        </section>
+
+        <section class="card">
+          <h2>Pending Marker</h2>
+          <pre id="pending" class="payload">Loading…</pre>
+        </section>
+
+        <section class="card wide">
+          <h2>Event Log</h2>
+          <ol id="log" class="log"></ol>
+        </section>
+      </main>
+    </div>
+    <script type="module" src="/src/main.js"></script>
+  </body>
+</html>
