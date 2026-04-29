@@ -115,13 +115,13 @@ The `example-app/` folder is linked via `file:..` and shows the pending marker, 
 
 <docgen-index>
 
-- [`getPendingCrashInfo()`](#getpendingcrashinfo)
-- [`clearPendingCrashInfo()`](#clearpendingcrashinfo)
-- [`simulateCrashRecovery()`](#simulatecrashrecovery)
-- [`addListener('webViewRestoredAfterCrash', ...)`](#addlistenerwebviewrestoredaftercrash-)
-- [`removeAllListeners()`](#removealllisteners)
-- [Interfaces](#interfaces)
-- [Type Aliases](#type-aliases)
+* [`getPendingCrashInfo()`](#getpendingcrashinfo)
+* [`clearPendingCrashInfo()`](#clearpendingcrashinfo)
+* [`simulateCrashRecovery()`](#simulatecrashrecovery)
+* [`addListener('webViewRestoredAfterCrash', ...)`](#addlistenerwebviewrestoredaftercrash-)
+* [`removeAllListeners()`](#removealllisteners)
+* [Interfaces](#interfaces)
+* [Type Aliases](#type-aliases)
 
 </docgen-index>
 
@@ -140,7 +140,8 @@ Returns the pending native crash marker, if one exists.
 
 **Returns:** <code>Promise&lt;<a href="#pendingcrashinforesult">PendingCrashInfoResult</a>&gt;</code>
 
----
+--------------------
+
 
 ### clearPendingCrashInfo()
 
@@ -150,7 +151,8 @@ clearPendingCrashInfo() => Promise<void>
 
 Clears the stored crash marker after the app has handled recovery.
 
----
+--------------------
+
 
 ### simulateCrashRecovery()
 
@@ -162,7 +164,8 @@ Creates a fake crash marker so recovery flows can be tested locally.
 
 **Returns:** <code>Promise&lt;<a href="#pendingcrashinforesult">PendingCrashInfoResult</a>&gt;</code>
 
----
+--------------------
+
 
 ### addListener('webViewRestoredAfterCrash', ...)
 
@@ -179,7 +182,8 @@ Fires after a new JavaScript runtime attaches a listener and a crash marker is s
 
 **Returns:** <code>Promise&lt;<a href="#pluginlistenerhandle">PluginListenerHandle</a>&gt;</code>
 
----
+--------------------
+
 
 ### removeAllListeners()
 
@@ -189,9 +193,11 @@ removeAllListeners() => Promise<void>
 
 Removes all plugin listeners.
 
----
+--------------------
+
 
 ### Interfaces
+
 
 #### PendingCrashInfoResult
 
@@ -200,6 +206,7 @@ Pending crash marker returned to JavaScript.
 | Prop        | Type                                                                  | Description                                                 |
 | ----------- | --------------------------------------------------------------------- | ----------------------------------------------------------- |
 | **`value`** | <code><a href="#webviewcrashinfo">WebViewCrashInfo</a> \| null</code> | Stored crash metadata, or `null` when no marker is pending. |
+
 
 #### WebViewCrashInfo
 
@@ -216,13 +223,16 @@ Metadata captured natively after the previous WebView process died.
 | **`rendererPriorityAtExit`** | <code>number</code>                                                   | Android-only renderer priority reported at exit.                       |
 | **`appState`**               | <code><a href="#webviewcrashappstate">WebViewCrashAppState</a></code> | iOS-only application state captured when the crash marker was written. |
 
+
 #### PluginListenerHandle
 
 | Prop         | Type                                      |
 | ------------ | ----------------------------------------- |
 | **`remove`** | <code>() =&gt; Promise&lt;void&gt;</code> |
 
+
 ### Type Aliases
+
 
 #### WebViewCrashPlatform
 
@@ -230,11 +240,13 @@ Platform that produced the stored crash marker.
 
 <code>'android' | 'ios' | 'web'</code>
 
+
 #### WebViewCrashReason
 
 Native reason reported for the previous WebView failure.
 
 <code>'renderProcessGone' | 'webContentProcessDidTerminate' | 'simulated'</code>
+
 
 #### WebViewCrashAppState
 
