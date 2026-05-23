@@ -1,6 +1,6 @@
 # Contributing
 
-This guide provides instructions for contributing to this Capacitor plugin template.
+This guide covers local development for `@capgo/capacitor-webview-crash`.
 
 ## Developing
 
@@ -13,7 +13,7 @@ This guide provides instructions for contributing to this Capacitor plugin templ
 bun install
 ```
 
-3. Install SwiftLint if you're on macOS.
+3. Install SwiftLint if you're on macOS and plan to run the full lint suite.
 
 ```shell
 brew install swiftlint
@@ -35,7 +35,7 @@ Checks or auto-fixes formatting and linting.
 
 ## Publishing
 
-The `prepublishOnly` hook prepares the plugin before publishing.
+The `prepublishOnly` hook builds the plugin before publishing.
 
 ```shell
 bun publish

@@ -1,188 +1,62 @@
 # AGENTS.md
 
-This file provides guidance to AI agents and contributors working on this Capacitor plugin template.
+Guidance for agents and contributors working on `@capgo/capacitor-webview-crash`.
 
-## Template First
+## Commands
 
-Run this before implementing real plugin logic:
-
-```bash
-bun run init-plugin <plugin-slug> [ClassName] [app.capgo.packageid] [GitHubOrg]
-```
-
-Example:
+Use Bun for repository work:
 
 ```bash
-bun run init-plugin downloader CapacitorDownloader app.capgo.downloader Cap-go
-```
-
-This command renames JS/iOS/Android identifiers, package metadata, and native file paths.
-
-Immediately after running it in a generated plugin copy:
-
-1. Change git remote away from the template before any push:
-   - `git remote set-url origin git@github.com:Cap-go/capacitor-<plugin-slug>.git`
-2. Remove bootstrap-only init script from the generated copy:
-   - delete `scripts/init-plugin.sh`
-   - remove `"init-plugin"` from `package.json` scripts
-
-## Public Release Requirements (Mandatory)
-
-When shipping a new plugin from this template, the agent must perform all of the following:
-
-1. Publish the repository under `Cap-go` and make it public.
-2. Set the GitHub repository description and ensure it starts with:
-   - `Capacitor plugin for ...`
-3. Set the GitHub repository homepage to:
-   - `https://capgo.app/docs/plugins/<plugin-slug>/`
-4. Open a pull request on `https://github.com/Cap-go/website` (or monorepo folder `landing/`) and update:
-   - `src/config/plugins.ts` (plugin registry entry)
-   - `src/content/docs/docs/plugins/index.mdx` (plugin card in docs index)
-   - `src/content/docs/docs/plugins/<plugin-doc-slug>/index.mdx`
-   - `src/content/docs/docs/plugins/<plugin-doc-slug>/getting-started.mdx`
-   - `src/content/docs/docs/plugins/<plugin-doc-slug>/ios.mdx` and `android.mdx` when platform setup differs
-   - `astro.config.mjs` (pagefind bucket + docs sidebar entry)
-   - `src/content/plugins-tutorials/en/<plugin-repo-slug>.md` (SEO tutorial page)
-   - `public/icons/plugins/<plugin-doc-slug>.svg` when the docs hero references a plugin icon
-5. Keep the README Capgo CTA header block and replace:
-   - `{{PLUGIN_REF_SLUG}}` with the tracking slug (example: `native_audio`)
-
-Website slug rule:
-
-- Docs routes use `<plugin-doc-slug>` under `/docs/plugins/<plugin-doc-slug>/`.
-- Tutorial routing uses `<plugin-repo-slug>` extracted from the plugin GitHub URL in `src/config/plugins.ts`.
-- Example: repo URL `https://github.com/Cap-go/capacitor-app-attest/` maps to tutorial file
-  `src/content/plugins-tutorials/en/capacitor-app-attest.md`.
-
-Reference commands:
-
-```bash
-# Create public repo directly
-gh repo create Cap-go/capacitor-<plugin-slug> --public --source=. --remote=origin --push
-
-# Or switch existing private repo to public
-gh repo edit Cap-go/capacitor-<plugin-slug> --visibility public --accept-visibility-change-consequences
-
-# Enforce description + homepage
-gh repo edit Cap-go/capacitor-<plugin-slug> \
-  --description "Capacitor plugin for <what-it-does>." \
-  --homepage "https://capgo.app/docs/plugins/<plugin-slug>/"
-```
-
-## Quick Start
-
-```bash
-# Install dependencies
 bun install
-
-# Build the plugin (TypeScript + Rollup + docgen)
 bun run build
-
-# Full verification (iOS, Android, Web)
-bun run verify
-
-# Format code (ESLint + Prettier + SwiftLint)
-bun run fmt
-
-# Lint without fixing
 bun run lint
+bun run verify
 ```
 
-## Development Workflow
+Use `bunx` when a local command needs a package binary. Public installation docs and marketing copy should use the standard `npm` / `npx` commands users expect.
 
-1. **Install** - `bun install` (never use npm)
-2. **Build** - `bun run build` compiles TypeScript, generates docs, and bundles with Rollup
-3. **Verify** - `bun run verify` builds for iOS, Android, and Web. Always run this before submitting work
-4. **Format** - `bun run fmt` auto-fixes ESLint, Prettier, and SwiftLint issues
-5. **Lint** - `bun run lint` checks code quality without modifying files
+## Verification
 
-## Capacitor Hook Scripts
-
-Use Capacitor lifecycle hooks in `package.json` when plugin setup must run automatically during `cap sync` / `cap update`.
-
-Recommended hooks:
-
-- `capacitor:sync:before` for code generation that must exist before native project sync.
-- `capacitor:update:before` for code generation that must exist before native project update.
-- `capacitor:sync:after` for post-sync native patching/configuration.
-- `capacitor:update:after` for post-update native patching/configuration.
-
-Example:
-
-```json
-{
-  "scripts": {
-    "generate:version-share": "bun run scripts/generate-version-share-data.mjs",
-    "configure:dependencies": "bun run scripts/configure-dependencies.mjs",
-    "capacitor:sync:before": "bun run generate:version-share",
-    "capacitor:update:before": "bun run generate:version-share",
-    "capacitor:sync:after": "bun run configure:dependencies"
-  }
-}
-```
-
-Notes:
-
-- Prefer `*:before` for deterministic inputs needed by native build/sync.
-- Use `*:after` only when the task depends on generated native files.
-- Keep hook scripts idempotent so repeated `cap sync` runs are safe.
-
-### Individual Platform Verification
+Run the narrowest relevant check while developing, then run the full verification before submitting release-impacting work:
 
 ```bash
-bun run verify:ios
-bun run verify:android
+bun run check:wiring
 bun run verify:web
+bun run verify:android
+bun run verify:ios
+bun run verify
 ```
 
-### Example App
-
-The `example-app/` directory links to the plugin via `file:..`:
-
-```bash
-cd example-app
-bun install
-bun run start
-```
-
-Use `bunx cap sync <platform>` to test iOS/Android shells.
-
-## Project Structure
-
-- `src/definitions.ts` - TypeScript interfaces and types (source of truth for API docs)
-- `src/index.ts` - Plugin registration
-- `src/web.ts` - Web implementation
-- `ios/Sources/` - iOS native code (Swift)
-- `android/src/main/` - Android native code (Java/Kotlin)
-- `dist/` - Generated output (do not edit manually)
-- `Package.swift` - SwiftPM definition
-- `*.podspec` - CocoaPods spec
-
-## iOS Package Management
-
-We always support both **CocoaPods** and **Swift Package Manager (SPM)**. Every plugin must ship a valid `*.podspec` and `Package.swift`.
+Android builds require Java 21. iOS verification requires Xcode with the iOS SDK.
 
 ## API Documentation
 
-API docs in the README are auto-generated from JSDoc in `src/definitions.ts`. **Never edit the `<docgen-index>` or `<docgen-api>` sections in `README.md` directly.** Instead, update `src/definitions.ts` and run `bun run docgen`. Document any important default or future-major default candidate in `src/definitions.ts` so the next Capacitor major upgrade can change it deliberately.
+`src/definitions.ts` is the source of truth for the public API. The README API reference is generated by `@capacitor/docgen`.
+
+Do not edit the `<docgen-index>` or `<docgen-api>` sections in `README.md` directly. Update JSDoc in `src/definitions.ts`, then run:
+
+```bash
+bun run docgen
+```
+
+## Project Structure
+
+- `src/definitions.ts` - TypeScript interfaces and generated API docs source.
+- `src/index.ts` - Capacitor plugin registration.
+- `src/web.ts` - Web implementation and simulation storage.
+- `ios/Sources/` - iOS native crash marker implementation.
+- `android/src/main/` - Android native crash marker implementation.
+- `example-app/` - Local validation app.
+- `Package.swift` - Swift Package Manager definition.
+- `CapgoCapacitorWebViewCrash.podspec` - CocoaPods definition.
 
 ## Versioning
 
-- New plugins must start at version `8.0.0` (Capacitor 8 baseline).
-- The plugin major version must always follow the Capacitor major version.
-- By default, ship and maintain Capacitor 8 support first.
-- Do not introduce breaking changes in `src/definitions.ts` unless explicitly asked or the current definition is broken or unusable.
-- Document any important default or future-major default candidate in `src/definitions.ts` so the next Capacitor major upgrade can change it deliberately.
-- Backward compatibility for older Capacitor majors is supported on demand.
-- Ship breaking changes only with a Capacitor major migration.
+- The plugin major version follows the Capacitor major version.
+- Keep Capacitor 8 support as the actively maintained baseline.
+- Do not introduce breaking changes in `src/definitions.ts` unless explicitly required.
+- `CHANGELOG.md` points to GitHub Releases and is not manually maintained.
 
-## Changelog
+## Native Package Managers
 
-`CHANGELOG.md` is managed automatically by CI/CD. Do not edit it manually.
-
-## Common Pitfalls
-
-- Always rename Swift/Java classes and package IDs when creating a new plugin from this template.
-- We only use Java 21 for Android builds.
-- `dist/` is regenerated on every build and should never be edited directly.
-- Use Bun for everything. If a command needs a package binary, use `bunx`.
+This plugin supports both CocoaPods and Swift Package Manager. Keep `CapgoCapacitorWebViewCrash.podspec`, `Package.swift`, and the package metadata aligned when changing iOS names or paths.
