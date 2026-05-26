@@ -2,11 +2,11 @@
 import PackageDescription
 
 let package = Package(
-    name: "CapgoCapacitorWebViewCrash",
+    name: "CapgoCapacitorWebviewCrash",
     platforms: [.iOS(.v15)],
     products: [
         .library(
-            name: "CapgoCapacitorWebViewCrash",
+            name: "CapgoCapacitorWebviewCrash",
             targets: ["WebViewCrashPlugin"])
     ],
     dependencies: [
