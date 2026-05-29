@@ -7,6 +7,8 @@ import WebKit
 enum WebViewCrashBridge {
     static let crashEventName = "webViewRestoredAfterCrash"
     static let restartEventName = "webViewRestoredAfterRestart"
+    static let periodicRestartReason = "periodicRestart"
+    static let manualRestartReason = "manualRestart"
 
     static func pendingResult(_ value: [String: Any]?) -> [String: Any] {
         [
@@ -97,7 +99,8 @@ enum WebViewCrashStore {
             return false
         }
 
-        return crashInfo["reason"] as? String != "periodicRestart"
+        let reason = crashInfo["reason"] as? String
+        return reason != WebViewCrashBridge.periodicRestartReason && reason != WebViewCrashBridge.manualRestartReason
     }
 }
 

@@ -9,7 +9,8 @@ public class WebViewCrashPlugin: CAPPlugin, CAPBridgedPlugin {
     public let pluginMethods: [CAPPluginMethod] = [
         CAPPluginMethod(name: "getPendingCrashInfo", returnType: CAPPluginReturnPromise),
         CAPPluginMethod(name: "clearPendingCrashInfo", returnType: CAPPluginReturnPromise),
-        CAPPluginMethod(name: "simulateCrashRecovery", returnType: CAPPluginReturnPromise)
+        CAPPluginMethod(name: "simulateCrashRecovery", returnType: CAPPluginReturnPromise),
+        CAPPluginMethod(name: "restartWebView", returnType: CAPPluginReturnPromise)
     ]
 
     private var dispatchedPendingEvents = Set<String>()
@@ -62,6 +63,28 @@ public class WebViewCrashPlugin: CAPPlugin, CAPBridgedPlugin {
         call.resolve(WebViewCrashBridge.pendingResult(crashInfo))
     }
 
+    @objc func restartWebView(_ call: CAPPluginCall) {
+        guard bridge?.viewController is CAPBridgeViewController else {
+            call.reject("Unable to restart WebView because the bridge view controller is unavailable.")
+            return
+        }
+
+        let restartInfo = WebViewCrashStore.buildCrashInfo(
+            platform: "ios",
+            reason: WebViewCrashBridge.manualRestartReason,
+            url: bridge?.webView?.url?.absoluteString,
+            appState: UIApplication.shared.applicationState.capgoWebViewCrashValue
+        )
+
+        WebViewCrashStore.write(restartInfo)
+        dispatchedPendingEvents.removeAll()
+        call.resolve(WebViewCrashBridge.pendingResult(restartInfo))
+
+        DispatchQueue.main.async { [weak self] in
+            _ = self?.recreateBridgeWebView()
+        }
+    }
+
     private func dispatchPendingCrashIfNeeded(eventName: String) {
         guard !dispatchedPendingEvents.contains(eventName),
             let crashInfo = WebViewCrashStore.read(),
@@ -86,7 +109,7 @@ public class WebViewCrashPlugin: CAPPlugin, CAPBridgedPlugin {
             }
 
             restartTimer = Timer.scheduledTimer(withTimeInterval: restartOptions.restartIntervalSeconds, repeats: false) { [weak self] _ in
-                self?.restartWebView(reason: "periodicRestart")
+                self?.restartWebView(reason: WebViewCrashBridge.periodicRestartReason)
             }
         }
     }
@@ -106,8 +129,24 @@ public class WebViewCrashPlugin: CAPPlugin, CAPBridgedPlugin {
 
             WebViewCrashStore.write(restartInfo)
             dispatchedPendingEvents.removeAll()
-            webView.reload()
-            schedulePeriodicRestart()
+            if !recreateBridgeWebView() {
+                webView.reload()
+                schedulePeriodicRestart()
+            }
         }
+    }
+
+    private func recreateBridgeWebView() -> Bool {
+        guard let viewController = bridge?.viewController as? CAPBridgeViewController else {
+            return false
+        }
+
+        restartTimer?.invalidate()
+        viewController.webView?.stopLoading()
+        viewController.webView?.navigationDelegate = nil
+        viewController.webView?.uiDelegate = nil
+        viewController.loadView()
+        viewController.loadWebView()
+        return true
     }
 }

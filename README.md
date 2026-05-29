@@ -26,6 +26,7 @@ Detect recovered Capacitor WebView crashes, restart dead WebViews natively, and 
 - Hooks the iOS WebView termination callback and persists equivalent crash metadata.
 - Restarts the WebView natively after crashes so recovery does not depend on a still-running JavaScript runtime.
 - Can restart the WebView on a fixed native interval for kiosk, POS, signage, telemetry, and other always-on apps.
+- Lets JavaScript request a native WebView restart with `restartWebView()` when the app wants to proactively recycle memory.
 - Exposes the marker through an event, a polling method, and a simulation helper for testing recovery flows.
 - Ships a web implementation that simulates the same recovery flow with local storage.
 
@@ -78,6 +79,14 @@ if (pending.value) {
 
 Use `simulateCrashRecovery()` in development or automated tests to exercise your recovery UI without forcing a real native WebView crash.
 
+Call `restartWebView()` when the current JavaScript runtime decides the native WebView should be replaced:
+
+```typescript
+await WebViewCrash.restartWebView();
+```
+
+The call writes a pending marker with `reason: 'manualRestart'`, then native code restarts the WebView. Android recreates the host Activity. iOS rebuilds the Capacitor bridge view so a new `WKWebView` is created instead of reloading the current page.
+
 ## Native Auto Restart
 
 Configure the plugin in `capacitor.config.ts` so restart decisions happen in native code, even when the JavaScript runtime is unavailable:
@@ -103,13 +112,13 @@ const config: CapacitorConfig = {
 export default config;
 ```
 
-Use scheduled restarts for apps that stay open for days: kiosk screens, control-room dashboards, point-of-sale terminals, warehouse scanners, vehicle tablets, or any Capacitor app that cannot rely on users force-closing it. The restart is native, writes a pending marker with `reason: 'periodicRestart'`, and then reloads or recreates the WebView.
+Use scheduled restarts for apps that stay open for days: kiosk screens, control-room dashboards, point-of-sale terminals, warehouse scanners, vehicle tablets, or any Capacitor app that cannot rely on users force-closing it. The restart is native, writes a pending marker with `reason: 'periodicRestart'`, and then creates a fresh WebView.
 
 Set `restartIntervalMs` to a maintenance window that your product can tolerate. The user will get a fresh JavaScript runtime, so persist unsaved form state, queued events, and in-progress work before enabling a short interval.
 
 ## Platform Notes
 
-- **iOS:** Uses method swizzling on Capacitor's `WebViewDelegationHandler` to persist crash metadata before Capacitor reloads the WebView. Scheduled restarts reload the current `WKWebView` from native code. No extra permissions are required.
+- **iOS:** Uses method swizzling on Capacitor's `WebViewDelegationHandler` to persist crash metadata before Capacitor reloads the WebView. Manual and scheduled restarts rebuild the Capacitor bridge view so a new `WKWebView` instance is created. No extra permissions are required.
 - **Android:** Registers a Capacitor `WebViewListener` and persists crash metadata from `onRenderProcessGone`. Crash and scheduled restarts reset the bridge and recreate the host activity, giving the app a fresh WebView. No extra permissions are required.
 - **Web:** There is no real browser crash detection. The web implementation only simulates the recovery flow with local storage.
 
@@ -126,6 +135,7 @@ Set `restartIntervalMs` to a maintenance window that your product can tolerate. 
 - [`getPendingCrashInfo()`](#getpendingcrashinfo)
 - [`clearPendingCrashInfo()`](#clearpendingcrashinfo)
 - [`simulateCrashRecovery()`](#simulatecrashrecovery)
+- [`restartWebView()`](#restartwebview)
 - [`addListener('webViewRestoredAfterCrash' | 'webViewRestoredAfterRestart', ...)`](#addlistenerwebviewrestoredaftercrash--webviewrestoredafterrestart-)
 - [`removeAllListeners()`](#removealllisteners)
 - [Interfaces](#interfaces)
@@ -167,6 +177,21 @@ simulateCrashRecovery() => Promise<PendingCrashInfoResult>
 ```
 
 Creates a fake crash marker so recovery flows can be tested locally.
+
+**Returns:** <code>Promise&lt;<a href="#pendingcrashinforesult">PendingCrashInfoResult</a>&gt;</code>
+
+---
+
+### restartWebView()
+
+```typescript
+restartWebView() => Promise<PendingCrashInfoResult>
+```
+
+Stores a manual restart marker and asks native code to create a fresh WebView.
+
+On Android this recreates the host Activity. On iOS this rebuilds the Capacitor bridge view so a new `WKWebView`
+instance is created instead of reloading the current page.
 
 **Returns:** <code>Promise&lt;<a href="#pendingcrashinforesult">PendingCrashInfoResult</a>&gt;</code>
 
@@ -242,7 +267,7 @@ Platform that produced the stored marker.
 
 Native reason reported for the previous WebView failure or restart.
 
-<code>'renderProcessGone' | 'webContentProcessDidTerminate' | 'periodicRestart' | 'simulated'</code>
+<code>'renderProcessGone' | 'webContentProcessDidTerminate' | 'periodicRestart' | 'manualRestart' | 'simulated'</code>
 
 #### WebViewCrashAppState
 

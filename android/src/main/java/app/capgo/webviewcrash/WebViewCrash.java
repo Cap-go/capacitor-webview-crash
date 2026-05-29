@@ -10,10 +10,11 @@ final class WebViewCrash {
 
     static final String CRASH_EVENT_NAME = "webViewRestoredAfterCrash";
     static final String RESTART_EVENT_NAME = "webViewRestoredAfterRestart";
+    static final String PERIODIC_RESTART_REASON = "periodicRestart";
+    static final String MANUAL_RESTART_REASON = "manualRestart";
 
     private static final String PREFERENCES_NAME = "CapgoWebViewCrash";
     private static final String PENDING_CRASH_KEY = "pendingCrashInfo";
-    private static final String PERIODIC_RESTART_REASON = "periodicRestart";
 
     JSObject buildCrashInfo(String reason, String url, Boolean didCrash, Integer rendererPriorityAtExit) {
         long timestamp = System.currentTimeMillis();
@@ -69,7 +70,7 @@ final class WebViewCrash {
         }
 
         String reason = crashInfo.optString("reason", "");
-        return !PERIODIC_RESTART_REASON.equals(reason);
+        return !PERIODIC_RESTART_REASON.equals(reason) && !MANUAL_RESTART_REASON.equals(reason);
     }
 
     RestartOptions readRestartOptions(PluginConfig config) {

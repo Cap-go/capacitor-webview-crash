@@ -25,7 +25,7 @@ public class WebViewCrashPlugin extends Plugin {
     private final Runnable periodicRestartRunnable = () -> {
         WebView webView = bridge != null ? bridge.getWebView() : null;
         String url = webView != null ? webView.getUrl() : null;
-        JSObject restartInfo = implementation.buildCrashInfo("periodicRestart", url, null, null);
+        JSObject restartInfo = implementation.buildCrashInfo(WebViewCrash.PERIODIC_RESTART_REASON, url, null, null);
 
         implementation.writePendingCrashInfo(getContext(), restartInfo);
         dispatchedPendingEvents.clear();
@@ -104,6 +104,22 @@ public class WebViewCrashPlugin extends Plugin {
         JSObject result = new JSObject();
         result.put("value", crashInfo);
         call.resolve(result);
+    }
+
+    @PluginMethod
+    public void restartWebView(PluginCall call) {
+        WebView webView = bridge != null ? bridge.getWebView() : null;
+        String url = webView != null ? webView.getUrl() : null;
+        JSObject restartInfo = implementation.buildCrashInfo(WebViewCrash.MANUAL_RESTART_REASON, url, null, null);
+
+        implementation.writePendingCrashInfo(getContext(), restartInfo);
+        dispatchedPendingEvents.clear();
+
+        JSObject result = new JSObject();
+        result.put("value", restartInfo);
+        call.resolve(result);
+
+        restartWebView(0);
     }
 
     private void dispatchPendingCrashIfNeeded(String eventName) {

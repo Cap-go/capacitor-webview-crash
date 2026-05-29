@@ -24,6 +24,14 @@ export class WebViewCrashWeb extends WebPlugin implements WebViewCrashPlugin {
     return { value };
   }
 
+  async restartWebView(): Promise<PendingCrashInfoResult> {
+    const value = this.buildCrashInfo('manualRestart');
+    this.writePendingCrashInfo(value);
+    this.dispatchedPendingEvents.clear();
+    this.flushPendingCrashEvent(WebViewCrashWeb.restartEventName);
+    return { value };
+  }
+
   async addListener(eventName: string, listenerFunc: (...args: any[]) => any): Promise<PluginListenerHandle> {
     const handle = await super.addListener(eventName, listenerFunc);
     if (eventName === WebViewCrashWeb.crashEventName || eventName === WebViewCrashWeb.restartEventName) {
@@ -48,19 +56,19 @@ export class WebViewCrashWeb extends WebPlugin implements WebViewCrashPlugin {
 
   private shouldDispatchEvent(eventName: string, value: WebViewCrashInfo): boolean {
     if (eventName === WebViewCrashWeb.crashEventName) {
-      return value.reason !== 'periodicRestart';
+      return value.reason !== 'periodicRestart' && value.reason !== 'manualRestart';
     }
 
     return eventName === WebViewCrashWeb.restartEventName;
   }
 
-  private buildCrashInfo(): WebViewCrashInfo {
+  private buildCrashInfo(reason: WebViewCrashInfo['reason'] = 'simulated'): WebViewCrashInfo {
     const timestamp = Date.now();
     return {
       platform: 'web',
       timestamp,
       timestampISO: new Date(timestamp).toISOString(),
-      reason: 'simulated',
+      reason,
       url: globalThis.location?.href,
       appState: 'active',
     };

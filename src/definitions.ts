@@ -7,6 +7,7 @@ export type WebViewCrashReason =
   | 'renderProcessGone'
   | 'webContentProcessDidTerminate'
   | 'periodicRestart'
+  | 'manualRestart'
   | 'simulated';
 
 /**
@@ -85,6 +86,14 @@ export interface WebViewCrashPlugin {
    * Creates a fake crash marker so recovery flows can be tested locally.
    */
   simulateCrashRecovery(): Promise<PendingCrashInfoResult>;
+
+  /**
+   * Stores a manual restart marker and asks native code to create a fresh WebView.
+   *
+   * On Android this recreates the host Activity. On iOS this rebuilds the Capacitor bridge view so a new `WKWebView`
+   * instance is created instead of reloading the current page.
+   */
+  restartWebView(): Promise<PendingCrashInfoResult>;
 
   /**
    * Fires after a new JavaScript runtime attaches a listener and a matching marker is still pending.
