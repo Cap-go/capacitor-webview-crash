@@ -1,4 +1,43 @@
+/// <reference types="@capacitor/cli" />
+
 import type { PluginListenerHandle } from '@capacitor/core';
+
+declare module '@capacitor/cli' {
+  export interface PluginsConfig {
+    /**
+     * Configure native WebView restart behavior for `@capgo/capacitor-webview-crash`.
+     */
+    WebViewCrash?: WebViewCrashPluginConfig;
+  }
+}
+
+/**
+ * Native WebView restart behavior configured in `capacitor.config.ts`.
+ */
+export interface WebViewCrashPluginConfig {
+  /**
+   * Restart the WebView from native code when the renderer process dies.
+   *
+   * @default true
+   */
+  restartOnCrash?: boolean;
+
+  /**
+   * Fixed native interval, in milliseconds, for proactively replacing long-running WebViews.
+   *
+   * Set to `0` to disable scheduled restarts.
+   *
+   * @default 0
+   */
+  restartIntervalMs?: number;
+
+  /**
+   * Delay, in milliseconds, before restarting after a crash.
+   *
+   * @default 0
+   */
+  restartAfterCrashDelayMs?: number;
+}
 
 /**
  * Native reason reported for the previous WebView failure or restart.
