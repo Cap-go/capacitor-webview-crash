@@ -54,3 +54,50 @@ test('clearPendingCrashInfo removes the stored crash payload', async () => {
   const pending = await plugin.getPendingCrashInfo();
   expect(pending.value).toBeNull();
 });
+
+test('simulateCrashRecovery notifies restart listeners', async () => {
+  const plugin = new WebViewCrashWeb();
+  const restored: unknown[] = [];
+
+  await plugin.addListener('webViewRestoredAfterRestart', (info) => restored.push(info));
+  const simulated = await plugin.simulateCrashRecovery();
+
+  expect(restored).toEqual([simulated.value]);
+});
+
+test('restartWebView stores a manual restart marker and notifies restart listeners', async () => {
+  const plugin = new WebViewCrashWeb();
+  const crashEvents: unknown[] = [];
+  const restartEvents: unknown[] = [];
+
+  await plugin.addListener('webViewRestoredAfterCrash', (info) => crashEvents.push(info));
+  await plugin.addListener('webViewRestoredAfterRestart', (info) => restartEvents.push(info));
+
+  const restarted = await plugin.restartWebView();
+  const pending = await plugin.getPendingCrashInfo();
+
+  expect(restarted.value?.reason).toBe('manualRestart');
+  expect(pending.value).toEqual(restarted.value);
+  expect(crashEvents).toEqual([]);
+  expect(restartEvents).toEqual([restarted.value]);
+});
+
+test('periodic restart markers only notify restart listeners', async () => {
+  const plugin = new WebViewCrashWeb();
+  const crashEvents: unknown[] = [];
+  const restartEvents: unknown[] = [];
+  const marker = {
+    platform: 'web',
+    timestamp: Date.now(),
+    timestampISO: new Date().toISOString(),
+    reason: 'periodicRestart',
+  };
+
+  globalThis.localStorage?.setItem('capgo.webview-crash.pending', JSON.stringify(marker));
+
+  await plugin.addListener('webViewRestoredAfterCrash', (info) => crashEvents.push(info));
+  await plugin.addListener('webViewRestoredAfterRestart', (info) => restartEvents.push(info));
+
+  expect(crashEvents).toEqual([]);
+  expect(restartEvents).toEqual([marker]);
+});

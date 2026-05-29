@@ -1,7 +1,7 @@
 {
   "name": "@capgo/capacitor-webview-crash",
   "version": "8.0.3",
-  "description": "Capacitor plugin for detecting WebView crash recovery and informing the next JS runtime.",
+  "description": "Capacitor plugin for detecting WebView crash recovery and restarting long-running WebViews natively.",
   "main": "dist/plugin.cjs.js",
   "module": "dist/esm/index.js",
   "types": "dist/esm/index.d.ts",
@@ -29,6 +29,8 @@
     "capacitor",
     "plugin",
     "webview-crash",
+    "webview-restart",
+    "oom-recovery",
     "crash-recovery",
     "ios",
     "android",
