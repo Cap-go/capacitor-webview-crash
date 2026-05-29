@@ -32,6 +32,20 @@ export interface WebViewCrashPluginConfig {
   restartIntervalMs?: number;
 
   /**
+   * Cron schedule for proactively replacing long-running WebViews.
+   *
+   * Uses standard 5-field cron syntax in the device local timezone:
+   * `minute hour day-of-month month day-of-week`.
+   *
+   * Examples:
+   * - `0 3 * * *` restarts every day at 03:00.
+   * - `0,30 * * * *` restarts every 30 minutes.
+   *
+   * When set, this takes precedence over `restartIntervalMs`.
+   */
+  restartCron?: string;
+
+  /**
    * Delay, in milliseconds, before restarting after a crash.
    *
    * @default 0

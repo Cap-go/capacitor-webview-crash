@@ -99,7 +99,7 @@ public class WebViewCrashPlugin: CAPPlugin, CAPBridgedPlugin {
     private func schedulePeriodicRestart() {
         restartTimer?.invalidate()
 
-        guard restartOptions.restartIntervalMs > 0 else {
+        guard let restartDelaySeconds = restartOptions.nextRestartDelaySeconds, restartDelaySeconds > 0 else {
             return
         }
 
@@ -108,7 +108,7 @@ public class WebViewCrashPlugin: CAPPlugin, CAPBridgedPlugin {
                 return
             }
 
-            restartTimer = Timer.scheduledTimer(withTimeInterval: restartOptions.restartIntervalSeconds, repeats: false) { [weak self] _ in
+            restartTimer = Timer.scheduledTimer(withTimeInterval: restartDelaySeconds, repeats: false) { [weak self] _ in
                 self?.restartWebView(reason: WebViewCrashBridge.periodicRestartReason)
             }
         }

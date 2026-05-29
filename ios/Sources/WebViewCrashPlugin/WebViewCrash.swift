@@ -20,11 +20,13 @@ enum WebViewCrashBridge {
 struct WebViewCrashRestartOptions {
     let restartOnCrash: Bool
     let restartIntervalMs: Int
+    let restartCron: WebViewCrashCronSchedule?
     let restartAfterCrashDelayMs: Int
 
     init(config: PluginConfig? = nil) {
         restartOnCrash = config?.getBoolean("restartOnCrash", true) ?? true
         restartIntervalMs = max(0, config?.getInt("restartIntervalMs", 0) ?? 0)
+        restartCron = WebViewCrashCronSchedule(config?.getString("restartCron", ""))
         restartAfterCrashDelayMs = max(0, config?.getInt("restartAfterCrashDelayMs", 0) ?? 0)
     }
 
@@ -32,8 +34,187 @@ struct WebViewCrashRestartOptions {
         TimeInterval(restartIntervalMs) / 1_000
     }
 
+    var nextRestartDelaySeconds: TimeInterval? {
+        if let restartCron {
+            return restartCron.nextDelaySeconds()
+        }
+
+        return restartIntervalMs > 0 ? restartIntervalSeconds : nil
+    }
+
     var restartAfterCrashDelaySeconds: TimeInterval {
         TimeInterval(restartAfterCrashDelayMs) / 1_000
+    }
+}
+
+struct WebViewCrashCronSchedule {
+    private static let searchLimitMinutes = 366 * 24 * 60 * 5
+
+    private let minutes: CronField
+    private let hours: CronField
+    private let daysOfMonth: CronField
+    private let months: CronField
+    private let daysOfWeek: CronField
+
+    init?(_ expression: String?) {
+        guard let expression else {
+            return nil
+        }
+
+        let parts = expression
+            .split(whereSeparator: { $0 == " " || $0 == "\t" || $0 == "\n" })
+            .map(String.init)
+
+        guard parts.count == 5,
+            let minutes = CronField(parts[0], min: 0, max: 59),
+            let hours = CronField(parts[1], min: 0, max: 23),
+            let daysOfMonth = CronField(parts[2], min: 1, max: 31),
+            let months = CronField(parts[3], min: 1, max: 12),
+            let daysOfWeek = CronField(parts[4], min: 0, max: 7, normalizeSunday: true) else {
+            return nil
+        }
+
+        self.minutes = minutes
+        self.hours = hours
+        self.daysOfMonth = daysOfMonth
+        self.months = months
+        self.daysOfWeek = daysOfWeek
+    }
+
+    func nextDelaySeconds(from date: Date = Date(), calendar sourceCalendar: Calendar = .current) -> TimeInterval? {
+        var calendar = sourceCalendar
+        calendar.timeZone = .current
+
+        guard var candidate = calendar.date(byAdding: .minute, value: 1, to: date) else {
+            return nil
+        }
+
+        var components = calendar.dateComponents([.year, .month, .day, .hour, .minute], from: candidate)
+        components.second = 0
+        components.nanosecond = 0
+        guard let roundedCandidate = calendar.date(from: components) else {
+            return nil
+        }
+        candidate = roundedCandidate
+
+        for _ in 0..<Self.searchLimitMinutes {
+            if matches(candidate, calendar: calendar) {
+                return max(0, candidate.timeIntervalSince(date))
+            }
+
+            guard let nextCandidate = calendar.date(byAdding: .minute, value: 1, to: candidate) else {
+                return nil
+            }
+            candidate = nextCandidate
+        }
+
+        return nil
+    }
+
+    private func matches(_ date: Date, calendar: Calendar) -> Bool {
+        let components = calendar.dateComponents([.minute, .hour, .day, .month, .weekday], from: date)
+
+        guard let minute = components.minute,
+            let hour = components.hour,
+            let day = components.day,
+            let month = components.month,
+            let weekday = components.weekday else {
+            return false
+        }
+
+        guard minutes.matches(minute), hours.matches(hour), months.matches(month) else {
+            return false
+        }
+
+        let cronWeekday = (weekday - 1) % 7
+        let dayOfMonthMatches = daysOfMonth.matches(day)
+        let dayOfWeekMatches = daysOfWeek.matches(cronWeekday)
+
+        if daysOfMonth.restricted && daysOfWeek.restricted {
+            return dayOfMonthMatches || dayOfWeekMatches
+        }
+
+        return dayOfMonthMatches && dayOfWeekMatches
+    }
+
+    private struct CronField {
+        let values: Set<Int>
+        let restricted: Bool
+
+        init?(_ expression: String, min: Int, max: Int, normalizeSunday: Bool = false) {
+            var values = Set<Int>()
+
+            for part in expression.split(separator: ",", omittingEmptySubsequences: false) {
+                guard Self.apply(String(part), to: &values, min: min, max: max, normalizeSunday: normalizeSunday) else {
+                    return nil
+                }
+            }
+
+            guard !values.isEmpty else {
+                return nil
+            }
+
+            let allValueCount = normalizeSunday ? 7 : max - min + 1
+            self.values = values
+            self.restricted = values.count != allValueCount
+        }
+
+        func matches(_ value: Int) -> Bool {
+            values.contains(value)
+        }
+
+        private static func apply(_ part: String, to values: inout Set<Int>, min: Int, max: Int, normalizeSunday: Bool) -> Bool {
+            let stepParts = part.split(separator: "/", omittingEmptySubsequences: false)
+            guard stepParts.count <= 2 else {
+                return false
+            }
+
+            var step = 1
+            if stepParts.count == 2 {
+                guard let parsedStep = Int(stepParts[1]), parsedStep > 0 else {
+                    return false
+                }
+                step = parsedStep
+            }
+
+            let rangePart = String(stepParts[0])
+            let start: Int
+            let end: Int
+
+            if rangePart == "*" {
+                start = min
+                end = max
+            } else if rangePart.contains("-") {
+                let range = rangePart.split(separator: "-", omittingEmptySubsequences: false)
+                guard range.count == 2, let rangeStart = Int(range[0]), let rangeEnd = Int(range[1]) else {
+                    return false
+                }
+                start = rangeStart
+                end = rangeEnd
+            } else {
+                guard let value = Int(rangePart) else {
+                    return false
+                }
+                start = value
+                end = value
+            }
+
+            guard start >= min, end <= max, start <= end else {
+                return false
+            }
+
+            var value = start
+            while value <= end {
+                values.insert(normalize(value, normalizeSunday: normalizeSunday))
+                value += step
+            }
+
+            return true
+        }
+
+        private static func normalize(_ value: Int, normalizeSunday: Bool) -> Int {
+            normalizeSunday && value == 7 ? 0 : value
+        }
     }
 }
 

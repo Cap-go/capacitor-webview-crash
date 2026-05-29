@@ -19,7 +19,7 @@ public class WebViewCrashPlugin extends Plugin {
 
     private final WebViewCrash implementation = new WebViewCrash();
     private final Set<String> dispatchedPendingEvents = new HashSet<>();
-    private WebViewCrash.RestartOptions restartOptions = new WebViewCrash.RestartOptions(true, 0, 0);
+    private WebViewCrash.RestartOptions restartOptions = new WebViewCrash.RestartOptions(true, 0, null, 0);
     private Handler mainHandler;
 
     private final Runnable periodicRestartRunnable = () -> {
@@ -138,11 +138,12 @@ public class WebViewCrashPlugin extends Plugin {
 
     private void schedulePeriodicRestart() {
         cancelPeriodicRestart();
-        if (restartOptions.restartIntervalMs <= 0) {
+        Long delayMs = restartOptions.nextRestartDelayMs();
+        if (delayMs == null || delayMs <= 0) {
             return;
         }
 
-        getMainHandler().postDelayed(periodicRestartRunnable, restartOptions.restartIntervalMs);
+        getMainHandler().postDelayed(periodicRestartRunnable, delayMs);
     }
 
     private void cancelPeriodicRestart() {
