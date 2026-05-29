@@ -5,12 +5,49 @@ import UIKit
 import WebKit
 
 enum WebViewCrashBridge {
-    static let eventName = "webViewRestoredAfterCrash"
+    static let crashEventName = "webViewRestoredAfterCrash"
+    static let restartEventName = "webViewRestoredAfterRestart"
 
     static func pendingResult(_ value: [String: Any]?) -> [String: Any] {
         [
             "value": value ?? NSNull()
         ]
+    }
+}
+
+struct WebViewCrashRestartOptions {
+    let restartOnCrash: Bool
+    let restartIntervalMs: Int
+    let restartAfterCrashDelayMs: Int
+
+    init(config: PluginConfig? = nil) {
+        restartOnCrash = config?.getBoolean("restartOnCrash", true) ?? true
+        restartIntervalMs = max(0, config?.getInt("restartIntervalMs", 0) ?? 0)
+        restartAfterCrashDelayMs = max(0, config?.getInt("restartAfterCrashDelayMs", 0) ?? 0)
+    }
+
+    var restartIntervalSeconds: TimeInterval {
+        TimeInterval(restartIntervalMs) / 1_000
+    }
+
+    var restartAfterCrashDelaySeconds: TimeInterval {
+        TimeInterval(restartAfterCrashDelayMs) / 1_000
+    }
+}
+
+enum WebViewCrashRuntime {
+    private static var options = WebViewCrashRestartOptions()
+
+    static func update(options newOptions: WebViewCrashRestartOptions) {
+        options = newOptions
+    }
+
+    static var restartOnCrash: Bool {
+        options.restartOnCrash
+    }
+
+    static var restartAfterCrashDelaySeconds: TimeInterval {
+        options.restartAfterCrashDelaySeconds
     }
 }
 
@@ -50,6 +87,18 @@ enum WebViewCrashStore {
 
         return value
     }
+
+    static func shouldDispatch(eventName: String, crashInfo: [String: Any]) -> Bool {
+        if eventName == WebViewCrashBridge.restartEventName {
+            return true
+        }
+
+        guard eventName == WebViewCrashBridge.crashEventName else {
+            return false
+        }
+
+        return crashInfo["reason"] as? String != "periodicRestart"
+    }
 }
 
 enum WebViewCrashSwizzler {
@@ -85,7 +134,21 @@ private extension WebViewDelegationHandler {
         )
 
         WebViewCrashStore.write(crashInfo)
-        capgo_webViewCrash_webViewWebContentProcessDidTerminate(webView)
+
+        guard WebViewCrashRuntime.restartOnCrash else {
+            return
+        }
+
+        let restart = {
+            self.capgo_webViewCrash_webViewWebContentProcessDidTerminate(webView)
+        }
+
+        let delay = WebViewCrashRuntime.restartAfterCrashDelaySeconds
+        if delay > 0 {
+            DispatchQueue.main.asyncAfter(deadline: .now() + delay, execute: restart)
+        } else {
+            restart()
+        }
     }
 }
 

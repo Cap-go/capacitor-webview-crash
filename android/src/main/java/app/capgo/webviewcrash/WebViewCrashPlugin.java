@@ -1,5 +1,7 @@
 package app.capgo.webviewcrash;
 
+import android.os.Handler;
+import android.os.Looper;
 import android.webkit.RenderProcessGoneDetail;
 import android.webkit.WebView;
 import androidx.appcompat.app.AppCompatActivity;
@@ -9,12 +11,26 @@ import com.getcapacitor.PluginCall;
 import com.getcapacitor.PluginMethod;
 import com.getcapacitor.WebViewListener;
 import com.getcapacitor.annotation.CapacitorPlugin;
+import java.util.HashSet;
+import java.util.Set;
 
 @CapacitorPlugin(name = "WebViewCrash")
 public class WebViewCrashPlugin extends Plugin {
 
     private final WebViewCrash implementation = new WebViewCrash();
-    private boolean didDispatchPendingEvent = false;
+    private final Set<String> dispatchedPendingEvents = new HashSet<>();
+    private WebViewCrash.RestartOptions restartOptions = new WebViewCrash.RestartOptions(true, 0, 0);
+    private Handler mainHandler;
+
+    private final Runnable periodicRestartRunnable = () -> {
+        WebView webView = bridge != null ? bridge.getWebView() : null;
+        String url = webView != null ? webView.getUrl() : null;
+        JSObject restartInfo = implementation.buildCrashInfo("periodicRestart", url, null, null);
+
+        implementation.writePendingCrashInfo(getContext(), restartInfo);
+        dispatchedPendingEvents.clear();
+        restartWebView(0);
+    };
 
     private final WebViewListener webViewListener = new WebViewListener() {
         @Override
@@ -27,36 +43,37 @@ public class WebViewCrashPlugin extends Plugin {
             );
 
             implementation.writePendingCrashInfo(getContext(), crashInfo);
-            didDispatchPendingEvent = false;
+            dispatchedPendingEvents.clear();
 
-            AppCompatActivity currentActivity = getActivity();
-            if (currentActivity != null) {
-                currentActivity.runOnUiThread(() -> {
-                    bridge.reset();
-                    currentActivity.recreate();
-                });
+            if (!restartOptions.restartOnCrash) {
+                return false;
             }
 
+            restartWebView(restartOptions.restartAfterCrashDelayMs);
             return true;
         }
     };
 
     @Override
     public void load() {
+        restartOptions = implementation.readRestartOptions(getConfig());
         bridge.addWebViewListener(webViewListener);
+        schedulePeriodicRestart();
     }
 
     @Override
     protected void handleOnDestroy() {
         bridge.removeWebViewListener(webViewListener);
+        cancelPeriodicRestart();
     }
 
     @Override
     public void addListener(PluginCall call) {
         super.addListener(call);
 
-        if (WebViewCrash.EVENT_NAME.equals(call.getString("eventName"))) {
-            dispatchPendingCrashIfNeeded();
+        String eventName = call.getString("eventName");
+        if (WebViewCrash.CRASH_EVENT_NAME.equals(eventName) || WebViewCrash.RESTART_EVENT_NAME.equals(eventName)) {
+            dispatchPendingCrashIfNeeded(eventName);
         }
     }
 
@@ -70,7 +87,7 @@ public class WebViewCrashPlugin extends Plugin {
     @PluginMethod
     public void clearPendingCrashInfo(PluginCall call) {
         implementation.clearPendingCrashInfo(getContext());
-        didDispatchPendingEvent = false;
+        dispatchedPendingEvents.clear();
         call.resolve();
     }
 
@@ -80,25 +97,72 @@ public class WebViewCrashPlugin extends Plugin {
         JSObject crashInfo = implementation.buildCrashInfo("simulated", url, null, null);
 
         implementation.writePendingCrashInfo(getContext(), crashInfo);
-        didDispatchPendingEvent = false;
-        dispatchPendingCrashIfNeeded();
+        dispatchedPendingEvents.clear();
+        dispatchPendingCrashIfNeeded(WebViewCrash.CRASH_EVENT_NAME);
+        dispatchPendingCrashIfNeeded(WebViewCrash.RESTART_EVENT_NAME);
 
         JSObject result = new JSObject();
         result.put("value", crashInfo);
         call.resolve(result);
     }
 
-    private void dispatchPendingCrashIfNeeded() {
-        if (didDispatchPendingEvent) {
+    private void dispatchPendingCrashIfNeeded(String eventName) {
+        if (dispatchedPendingEvents.contains(eventName)) {
             return;
         }
 
         JSObject crashInfo = implementation.readPendingCrashInfo(getContext());
-        if (crashInfo == null) {
+        if (crashInfo == null || !implementation.shouldDispatchEvent(eventName, crashInfo)) {
             return;
         }
 
-        didDispatchPendingEvent = true;
-        notifyListeners(WebViewCrash.EVENT_NAME, crashInfo);
+        dispatchedPendingEvents.add(eventName);
+        notifyListeners(eventName, crashInfo);
+    }
+
+    private void schedulePeriodicRestart() {
+        cancelPeriodicRestart();
+        if (restartOptions.restartIntervalMs <= 0) {
+            return;
+        }
+
+        getMainHandler().postDelayed(periodicRestartRunnable, restartOptions.restartIntervalMs);
+    }
+
+    private void cancelPeriodicRestart() {
+        if (mainHandler != null) {
+            mainHandler.removeCallbacks(periodicRestartRunnable);
+        }
+    }
+
+    private void restartWebView(int delayMs) {
+        Runnable restart = () -> {
+            AppCompatActivity currentActivity = getActivity();
+            if (currentActivity == null) {
+                schedulePeriodicRestart();
+                return;
+            }
+
+            currentActivity.runOnUiThread(() -> {
+                if (bridge != null) {
+                    bridge.reset();
+                }
+                currentActivity.recreate();
+            });
+        };
+
+        if (delayMs > 0) {
+            getMainHandler().postDelayed(restart, delayMs);
+        } else {
+            getMainHandler().post(restart);
+        }
+    }
+
+    private Handler getMainHandler() {
+        if (mainHandler == null) {
+            mainHandler = new Handler(Looper.getMainLooper());
+        }
+
+        return mainHandler;
     }
 }
