@@ -25,7 +25,8 @@ export interface WebViewCrashPluginConfig {
   /**
    * Fixed native interval, in milliseconds, for proactively replacing long-running WebViews.
    *
-   * Set to `0` to disable scheduled restarts.
+   * Set to `0` to disable interval restarts. Do not combine an active interval
+   * with `restartCron`; native initialization fails fast when both schedules are configured.
    *
    * @default 0
    */
@@ -41,7 +42,8 @@ export interface WebViewCrashPluginConfig {
    * - `0 3 * * *` restarts every day at 03:00.
    * - `0,30 * * * *` restarts every 30 minutes.
    *
-   * When set, this takes precedence over `restartIntervalMs`.
+   * Do not combine this with an active `restartIntervalMs`; native initialization
+   * fails fast when both schedules are configured.
    */
   restartCron?: string;
 

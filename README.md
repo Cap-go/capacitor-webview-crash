@@ -99,11 +99,8 @@ const webViewCrash: WebViewCrashPluginConfig = {
   // Keep native crash recovery enabled. This is the default.
   restartOnCrash: true,
 
-  // Recycle the WebView every hour. Set to 0 to disable interval restarts.
-  restartIntervalMs: 60 * 60 * 1000,
-
-  // Or use a 5-field cron schedule in the device local timezone.
-  // When set, restartCron takes precedence over restartIntervalMs.
+  // Use a 5-field cron schedule in the device local timezone.
+  // Do not combine restartCron with an active restartIntervalMs.
   restartCron: '0 3 * * *',
 
   // Optional delay before restarting after a crash.
@@ -121,7 +118,7 @@ export default config;
 
 Use scheduled restarts for apps that stay open for days: kiosk screens, control-room dashboards, point-of-sale terminals, warehouse scanners, vehicle tablets, or any Capacitor app that cannot rely on users force-closing it. The restart is native, writes a pending marker with `reason: 'periodicRestart'`, and then creates a fresh WebView.
 
-Set `restartIntervalMs` to a maintenance window that your product can tolerate, or set `restartCron` for a wall-clock schedule such as `0 3 * * *` for a daily 03:00 restart. `restartCron` uses 5-field cron syntax in the device local timezone and supports `*`, lists, ranges, and steps. When both are set, `restartCron` takes precedence. The user will get a fresh JavaScript runtime, so persist unsaved form state, queued events, and in-progress work before enabling a short interval or cron schedule.
+Set `restartIntervalMs` to a maintenance window that your product can tolerate, or set `restartCron` for a wall-clock schedule such as `0 3 * * *` for a daily 03:00 restart. `restartCron` uses 5-field cron syntax in the device local timezone and supports `*`, lists, ranges, and steps. Do not configure both schedules at once: native initialization throws a fatal config error when `restartCron` is set and `restartIntervalMs` is greater than `0`. The user will get a fresh JavaScript runtime, so persist unsaved form state, queued events, and in-progress work before enabling a short interval or cron schedule.
 
 ## Config Type
 

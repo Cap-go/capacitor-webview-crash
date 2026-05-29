@@ -78,12 +78,23 @@ final class WebViewCrash {
     }
 
     RestartOptions readRestartOptions(PluginConfig config) {
+        int restartIntervalMs = Math.max(0, config.getInt("restartIntervalMs", 0));
+        String restartCronExpression = config.getString("restartCron", null);
+
+        validateRestartScheduleConfig(restartIntervalMs, restartCronExpression);
+
         return new RestartOptions(
             config.getBoolean("restartOnCrash", true),
-            Math.max(0, config.getInt("restartIntervalMs", 0)),
-            CronSchedule.parse(config.getString("restartCron", null)),
+            restartIntervalMs,
+            CronSchedule.parse(restartCronExpression),
             Math.max(0, config.getInt("restartAfterCrashDelayMs", 0))
         );
+    }
+
+    static void validateRestartScheduleConfig(int restartIntervalMs, String restartCronExpression) {
+        if (restartIntervalMs > 0 && restartCronExpression != null && !restartCronExpression.isBlank()) {
+            throw new IllegalStateException("Invalid WebViewCrash config: set either restartIntervalMs or restartCron, not both.");
+        }
     }
 
     static final class RestartOptions {

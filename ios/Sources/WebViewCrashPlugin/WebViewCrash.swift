@@ -24,9 +24,16 @@ struct WebViewCrashRestartOptions {
     let restartAfterCrashDelayMs: Int
 
     init(config: PluginConfig? = nil) {
+        let intervalMs = max(0, config?.getInt("restartIntervalMs", 0) ?? 0)
+        let cronExpression = config?.getString("restartCron", "") ?? ""
+
+        if intervalMs > 0 && !cronExpression.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+            fatalError("Invalid WebViewCrash config: set either restartIntervalMs or restartCron, not both.")
+        }
+
         restartOnCrash = config?.getBoolean("restartOnCrash", true) ?? true
-        restartIntervalMs = max(0, config?.getInt("restartIntervalMs", 0) ?? 0)
-        restartCron = WebViewCrashCronSchedule(config?.getString("restartCron", ""))
+        restartIntervalMs = intervalMs
+        restartCron = WebViewCrashCronSchedule(cronExpression)
         restartAfterCrashDelayMs = max(0, config?.getInt("restartAfterCrashDelayMs", 0) ?? 0)
     }
 
