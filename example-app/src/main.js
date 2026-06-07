@@ -1,3 +1,5 @@
+import { CapacitorUpdater } from '@capgo/capacitor-updater';
+import { Capacitor } from '@capacitor/core';
 import './style.css';
 
 import { WebViewCrash } from '@capgo/capacitor-webview-crash';
@@ -54,4 +56,10 @@ function log(message) {
   const item = document.createElement('li');
   item.textContent = `${new Date().toLocaleTimeString()}  ${message}`;
   logNode.prepend(item);
+}
+
+if (Capacitor.isNativePlatform()) {
+  CapacitorUpdater.notifyAppReady().catch((error) => {
+    console.error('Capgo notifyAppReady failed', error);
+  });
 }
