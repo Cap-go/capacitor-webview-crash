@@ -12,7 +12,9 @@ let package = Package(
     ],
     dependencies: [
         .package(url: "https://github.com/ionic-team/capacitor-swift-pm.git", exact: "8.1.0"),
-        .package(name: "CapgoCapacitorWebviewCrash", path: "../../../node_modules/.bun/@capgo+capacitor-webview-crash@file+../node_modules/@capgo/capacitor-webview-crash")
+        .package(name: "CapgoCapacitorWebviewCrash", path: "../../../node_modules/.bun/@capgo+capacitor-webview-crash@file+../node_modules/@capgo/capacitor-webview-crash"),
+        .package(name: "CapgoCapacitorUpdater", path: "../../../node_modules/.bun/@capgo+capacitor-updater@8.47.10+2476a4e6bb24aa03/node_modules/@capgo/capacitor-updater"),
+        .package(name: "CapacitorSplashScreen", path: "../../../node_modules/.bun/@capacitor+splash-screen@8.0.1+2476a4e6bb24aa03/node_modules/@capacitor/splash-screen")
     ],
     targets: [
         .target(
@@ -20,7 +22,9 @@ let package = Package(
             dependencies: [
                 .product(name: "Capacitor", package: "capacitor-swift-pm"),
                 .product(name: "Cordova", package: "capacitor-swift-pm"),
-                .product(name: "CapgoCapacitorWebviewCrash", package: "CapgoCapacitorWebviewCrash")
+                .product(name: "CapgoCapacitorWebviewCrash", package: "CapgoCapacitorWebviewCrash"),
+                .product(name: "CapgoCapacitorUpdater", package: "CapgoCapacitorUpdater"),
+                .product(name: "CapacitorSplashScreen", package: "CapacitorSplashScreen")
             ]
         )
     ]
