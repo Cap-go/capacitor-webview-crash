@@ -60,3 +60,7 @@ bun run docgen
 ## Native Package Managers
 
 This plugin supports both CocoaPods and Swift Package Manager. Keep `CapgoCapacitorWebViewCrash.podspec`, `Package.swift`, and the package metadata aligned when changing iOS names or paths.
+
+## Timeout Policy
+
+- Keep CI, script, and runtime timeouts at 10 minutes or less. Use `timeout-minutes: 10` or lower in GitHub Actions and cap timeout values at `600000` ms, `600` seconds, or `10m` unless explicitly requested.
