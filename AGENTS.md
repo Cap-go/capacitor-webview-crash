@@ -48,7 +48,7 @@ bun run docgen
 - `android/src/main/` - Android native crash marker implementation.
 - `example-app/` - Local validation app.
 - `Package.swift` - Swift Package Manager definition.
-- `CapgoCapacitorWebViewCrash.podspec` - CocoaPods definition.
+- `CapgoCapacitorWebviewCrash.podspec` - CocoaPods definition.
 
 ## Versioning
 
@@ -59,7 +59,7 @@ bun run docgen
 
 ## Native Package Managers
 
-This plugin supports both CocoaPods and Swift Package Manager. Keep `CapgoCapacitorWebViewCrash.podspec`, `Package.swift`, and the package metadata aligned when changing iOS names or paths.
+This plugin supports both CocoaPods and Swift Package Manager. Keep `CapgoCapacitorWebviewCrash.podspec`, `Package.swift`, and the package metadata aligned when changing iOS names or paths.
 
 ## Timeout Policy
 
