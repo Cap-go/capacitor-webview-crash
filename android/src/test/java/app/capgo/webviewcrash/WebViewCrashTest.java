@@ -1,6 +1,7 @@
 package app.capgo.webviewcrash;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertSame;
 import static org.junit.Assert.assertThrows;
 
 import org.junit.Test;
@@ -24,5 +25,12 @@ public class WebViewCrashTest {
     @Test
     public void validateRestartScheduleConfigAllowsIntervalWithoutCron() {
         WebViewCrash.validateRestartScheduleConfig(1_000, null);
+    }
+
+    @Test
+    public void coalescePendingCrashInfoUsesJsonNullSentinelWhenNothingIsPending() {
+        Object jsonNullSentinel = new Object();
+
+        assertSame(jsonNullSentinel, WebViewCrash.coalescePendingCrashInfo(null, jsonNullSentinel));
     }
 }

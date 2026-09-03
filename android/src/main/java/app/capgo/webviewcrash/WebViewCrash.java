@@ -9,6 +9,7 @@ import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.time.temporal.ChronoUnit;
 import org.json.JSONException;
+import org.json.JSONObject;
 
 final class WebViewCrash {
 
@@ -95,6 +96,10 @@ final class WebViewCrash {
         if (restartIntervalMs > 0 && restartCronExpression != null && !restartCronExpression.isBlank()) {
             throw new IllegalStateException("Invalid WebViewCrash config: set either restartIntervalMs or restartCron, not both.");
         }
+    }
+
+    static Object coalescePendingCrashInfo(JSObject pendingCrashInfo, Object jsonNullSentinel) {
+        return pendingCrashInfo != null ? pendingCrashInfo : jsonNullSentinel;
     }
 
     static final class RestartOptions {

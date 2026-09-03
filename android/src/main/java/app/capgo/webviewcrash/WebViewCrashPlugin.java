@@ -91,8 +91,7 @@ public class WebViewCrashPlugin extends Plugin {
     @PluginMethod
     public void getPendingCrashInfo(PluginCall call) {
         JSObject result = new JSObject();
-        JSObject pendingCrashInfo = implementation.readPendingCrashInfo(getContext());
-        result.put("value", pendingCrashInfo != null ? pendingCrashInfo : JSONObject.NULL);
+        result.put("value", WebViewCrash.coalescePendingCrashInfo(implementation.readPendingCrashInfo(getContext()), JSONObject.NULL));
         call.resolve(result);
     }
 
