@@ -13,6 +13,7 @@ import com.getcapacitor.WebViewListener;
 import com.getcapacitor.annotation.CapacitorPlugin;
 import java.util.HashSet;
 import java.util.Set;
+import org.json.JSONObject;
 
 @CapacitorPlugin(name = "WebViewCrash")
 public class WebViewCrashPlugin extends Plugin {
@@ -90,7 +91,8 @@ public class WebViewCrashPlugin extends Plugin {
     @PluginMethod
     public void getPendingCrashInfo(PluginCall call) {
         JSObject result = new JSObject();
-        result.put("value", implementation.readPendingCrashInfo(getContext()));
+        JSObject pendingCrashInfo = implementation.readPendingCrashInfo(getContext());
+        result.put("value", pendingCrashInfo != null ? pendingCrashInfo : JSONObject.NULL);
         call.resolve(result);
     }
 
