@@ -21,6 +21,7 @@ public class WebViewCrashPlugin extends Plugin {
     private final Set<String> dispatchedPendingEvents = new HashSet<>();
     private WebViewCrash.RestartOptions restartOptions = new WebViewCrash.RestartOptions(true, 0, null, 0);
     private Handler mainHandler;
+    private boolean webViewListenerRegistered;
 
     private final Runnable periodicRestartRunnable = () -> {
         WebView webView = bridge != null ? bridge.getWebView() : null;
@@ -57,13 +58,22 @@ public class WebViewCrashPlugin extends Plugin {
     @Override
     public void load() {
         restartOptions = implementation.readRestartOptions(getConfig());
-        bridge.addWebViewListener(webViewListener);
         schedulePeriodicRestart();
+    }
+
+    @Override
+    protected void handleOnStart() {
+        super.handleOnStart();
+        if (!webViewListenerRegistered) {
+            bridge.addWebViewListener(webViewListener);
+            webViewListenerRegistered = true;
+        }
     }
 
     @Override
     protected void handleOnDestroy() {
         bridge.removeWebViewListener(webViewListener);
+        webViewListenerRegistered = false;
         cancelPeriodicRestart();
     }
 
