@@ -1,24 +1,46 @@
 # @capgo/capacitor-webview-crash
 
-<a href="https://capgo.app/">
+Keep your Capacitor app alive when the WebView crashes: detect recovered crashes, restart dead WebViews natively, and recycle long-running WebViews before they run out of memory.
+
+<a href="https://capgo.app/?ref=plugin_webview_crash">
   <img
-    src="https://raw.githubusercontent.com/Cap-go/capgo/main/assets/capgo_banner.png"
+    src="https://capgo.app/readme-banner.svg?repo=Cap-go/capacitor-webview-crash"
     alt="Capgo - Instant updates for Capacitor"
   />
 </a>
 
 <div align="center">
+  <p>
+    <b>Capgo</b>: open-source live updates for Ionic and Capacitor apps. Ship OTA fixes and features instantly, without
+    waiting for app store review.
+  </p>
   <h2>
-    <a href="https://capgo.app/?ref=plugin_webview_crash"> ➡️ Get Instant updates for your App with Capgo</a>
+    <a href="https://capgo.app/register/?ref=plugin_webview_crash">➡️ Get started for free</a>
   </h2>
-  <h2>
+  <p>14-day unlimited free trial. No credit card required</p>
+  <p>
     <a href="https://capgo.app/consulting/?ref=plugin_webview_crash">
-      Missing a feature? We’ll build the plugin for you 💪
+      Missing a feature? We'll build the plugin for you 💪
     </a>
-  </h2>
+  </p>
 </div>
 
-Detect recovered Capacitor WebView crashes, restart dead WebViews natively, and optionally recycle long-running WebViews on a fixed interval before memory pressure turns into an OOM.
+<p align="center">
+  <img
+    src="https://raw.githubusercontent.com/Cap-go/capacitor-webview-crash/main/assets/github-social-preview.png"
+    alt="@capgo/capacitor-webview-crash for Capacitor apps"
+    width="300"
+  />
+</p>
+
+## Key features
+
+- **Crash recovery**: `restartOnCrash` restarts the WebView when its renderer process dies.
+- **Recovery info**: `getPendingCrashInfo()` and `clearPendingCrashInfo()`, plus the `webViewRestoredAfterCrash` event.
+- **Scheduled recycling**: `restartIntervalMs` or `restartCron` replaces long-running WebViews.
+- **Manual restart**: `restartWebView()` creates a fresh WebView.
+- **Testing**: `simulateCrashRecovery()` exercises your recovery flow.
+- **Platforms**: iOS and Android. Web only supports the testing helpers.
 
 ## What It Does
 
