@@ -1,6 +1,5 @@
 import Capacitor
 import Foundation
-import ObjectiveC.runtime
 import UIKit
 import WebKit
 
@@ -292,31 +291,93 @@ enum WebViewCrashStore {
     }
 }
 
-enum WebViewCrashSwizzler {
-    private static var didInstall = false
-
-    static func installIfNeeded() {
-        guard !didInstall else {
+enum WebViewCrashNavigationDelegateInstaller {
+    /// Installs a typed `WKNavigationDelegate` proxy on the bridge web view.
+    ///
+    /// Ordering: call after Capacitor assigns `navigationDelegate` (plugin `load()` or after
+    /// `loadWebView()`). If another plugin replaces `navigationDelegate` later, crash handling
+    /// stops until this installer runs again. Manual or periodic restarts re-install via
+    /// `recreateBridgeWebView()`.
+    static func installIfNeeded(on webView: WKWebView?) {
+        guard let webView else {
             return
         }
 
-        let originalSelector = #selector(WebViewDelegationHandler.webViewWebContentProcessDidTerminate(_:))
-        let swizzledSelector = #selector(WebViewDelegationHandler.capgo_webViewCrash_webViewWebContentProcessDidTerminate(_:))
-
-        guard
-            let originalMethod = class_getInstanceMethod(WebViewDelegationHandler.self, originalSelector),
-            let swizzledMethod = class_getInstanceMethod(WebViewDelegationHandler.self, swizzledSelector)
-        else {
+        if webView.navigationDelegate is WebViewCrashNavigationDelegateProxy {
             return
         }
 
-        method_exchangeImplementations(originalMethod, swizzledMethod)
-        didInstall = true
+        guard let handler = webView.navigationDelegate as? WebViewDelegationHandler else {
+            return
+        }
+
+        webView.navigationDelegate = WebViewCrashNavigationDelegateProxy(handler: handler)
     }
 }
 
-private extension WebViewDelegationHandler {
-    @objc func capgo_webViewCrash_webViewWebContentProcessDidTerminate(_ webView: WKWebView) {
+final class WebViewCrashNavigationDelegateProxy: NSObject, WKNavigationDelegate {
+    private weak var handler: WebViewDelegationHandler?
+
+    init(handler: WebViewDelegationHandler) {
+        self.handler = handler
+        super.init()
+    }
+
+    func webView(_ webView: WKWebView, didStartProvisionalNavigation navigation: WKNavigation!) {
+        handler?.webView(webView, didStartProvisionalNavigation: navigation)
+    }
+
+    func webView(
+        _ webView: WKWebView,
+        requestMediaCapturePermissionFor origin: WKSecurityOrigin,
+        initiatedByFrame frame: WKFrameInfo,
+        type: WKMediaCaptureType,
+        decisionHandler: @escaping (WKPermissionDecision) -> Void
+    ) {
+        handler?.webView(
+            webView,
+            requestMediaCapturePermissionFor: origin,
+            initiatedByFrame: frame,
+            type: type,
+            decisionHandler: decisionHandler
+        )
+    }
+
+    func webView(
+        _ webView: WKWebView,
+        requestDeviceOrientationAndMotionPermissionFor origin: WKSecurityOrigin,
+        initiatedByFrame frame: WKFrameInfo,
+        decisionHandler: @escaping (WKPermissionDecision) -> Void
+    ) {
+        handler?.webView(
+            webView,
+            requestDeviceOrientationAndMotionPermissionFor: origin,
+            initiatedByFrame: frame,
+            decisionHandler: decisionHandler
+        )
+    }
+
+    func webView(
+        _ webView: WKWebView,
+        decidePolicyFor navigationAction: WKNavigationAction,
+        decisionHandler: @escaping (WKNavigationActionPolicy) -> Void
+    ) {
+        handler?.webView(webView, decidePolicyFor: navigationAction, decisionHandler: decisionHandler)
+    }
+
+    func webView(_ webView: WKWebView, didFinish navigation: WKNavigation!) {
+        handler?.webView(webView, didFinish: navigation)
+    }
+
+    func webView(_ webView: WKWebView, didFail navigation: WKNavigation!, withError error: Error) {
+        handler?.webView(webView, didFail: navigation, withError: error)
+    }
+
+    func webView(_ webView: WKWebView, didFailProvisionalNavigation navigation: WKNavigation!, withError error: Error) {
+        handler?.webView(webView, didFailProvisionalNavigation: navigation, withError: error)
+    }
+
+    func webViewWebContentProcessDidTerminate(_ webView: WKWebView) {
         let crashInfo = WebViewCrashStore.buildCrashInfo(
             platform: "ios",
             reason: "webContentProcessDidTerminate",
@@ -330,16 +391,24 @@ private extension WebViewDelegationHandler {
             return
         }
 
-        let restart = {
-            self.capgo_webViewCrash_webViewWebContentProcessDidTerminate(webView)
+        let forwardToCapacitor = { [weak self] in
+            self?.handler?.webViewWebContentProcessDidTerminate(webView)
         }
 
         let delay = WebViewCrashRuntime.restartAfterCrashDelaySeconds
         if delay > 0 {
-            DispatchQueue.main.asyncAfter(deadline: .now() + delay, execute: restart)
+            DispatchQueue.main.asyncAfter(deadline: .now() + delay, execute: forwardToCapacitor)
         } else {
-            restart()
+            forwardToCapacitor()
         }
+    }
+
+    func webView(
+        _ webView: WKWebView,
+        didReceive challenge: URLAuthenticationChallenge,
+        completionHandler: @escaping @MainActor (URLSession.AuthChallengeDisposition, URLCredential?) -> Void
+    ) {
+        handler?.webView(webView, didReceive: challenge, completionHandler: completionHandler)
     }
 }
 

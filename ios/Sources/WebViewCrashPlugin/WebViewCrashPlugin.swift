@@ -20,7 +20,7 @@ public class WebViewCrashPlugin: CAPPlugin, CAPBridgedPlugin {
     override public func load() {
         restartOptions = WebViewCrashRestartOptions(config: getConfig())
         WebViewCrashRuntime.update(options: restartOptions)
-        WebViewCrashSwizzler.installIfNeeded()
+        WebViewCrashNavigationDelegateInstaller.installIfNeeded(on: bridge?.webView)
         schedulePeriodicRestart()
     }
 
@@ -147,6 +147,7 @@ public class WebViewCrashPlugin: CAPPlugin, CAPBridgedPlugin {
         viewController.webView?.uiDelegate = nil
         viewController.loadView()
         viewController.loadWebView()
+        WebViewCrashNavigationDelegateInstaller.installIfNeeded(on: viewController.webView)
         return true
     }
 }
