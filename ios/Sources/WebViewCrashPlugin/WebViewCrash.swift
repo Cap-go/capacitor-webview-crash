@@ -292,6 +292,9 @@ enum WebViewCrashStore {
 }
 
 enum WebViewCrashNavigationDelegateInstaller {
+    /// Retains the proxy because `WKWebView.navigationDelegate` is weak.
+    private static var retainedProxy: WebViewCrashNavigationDelegateProxy?
+
     /// Installs a typed `WKNavigationDelegate` proxy on the bridge web view.
     ///
     /// Ordering: call after Capacitor assigns `navigationDelegate` (plugin `load()` or after
@@ -311,7 +314,9 @@ enum WebViewCrashNavigationDelegateInstaller {
             return
         }
 
-        webView.navigationDelegate = WebViewCrashNavigationDelegateProxy(handler: handler)
+        let proxy = WebViewCrashNavigationDelegateProxy(handler: handler)
+        retainedProxy = proxy
+        webView.navigationDelegate = proxy
     }
 }
 
@@ -391,8 +396,11 @@ final class WebViewCrashNavigationDelegateProxy: NSObject, WKNavigationDelegate 
             return
         }
 
-        let forwardToCapacitor = { [weak self] in
-            self?.handler?.webViewWebContentProcessDidTerminate(webView)
+        let forwardToCapacitor: () -> Void = { [weak self] in
+            guard let handler = self?.handler else {
+                return
+            }
+            handler.webViewWebContentProcessDidTerminate(webView)
         }
 
         let delay = WebViewCrashRuntime.restartAfterCrashDelaySeconds
