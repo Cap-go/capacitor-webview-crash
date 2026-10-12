@@ -25,7 +25,7 @@ Keep your Capacitor app alive when the WebView crashes: detect recovered crashes
   </p>
 </div>
 
-> 🤖 **Building with an AI coding agent?** Install [Capgo skills](https://capgo.app/skills/?ref=plugin_webview_crash) so Claude Code, Codex, Cursor, Copilot, or Gemini CLI know how to install and use `@capgo/capacitor-webview-crash` in your Capacitor app: `npx skills add Cap-go/capgo-skills`. Then ask your agent: *"Add @capgo/capacitor-webview-crash to my Capacitor app and wire it up."* [Agent setup guides](https://capgo.app/agents/?ref=plugin_webview_crash) · [Hosted MCP](https://capgo.app/docs/ai/mcp/?ref=plugin_webview_crash)
+> 🤖 **Building with an AI coding agent?** Install [Capgo skills](https://capgo.app/skills/?ref=plugin_webview_crash) so Claude Code, Codex, Cursor, Copilot, or Gemini CLI know how to install and use `@capgo/capacitor-webview-crash` in your Capacitor app: `npx skills add Cap-go/capgo-skills`. Then ask your agent: _"Add @capgo/capacitor-webview-crash to my Capacitor app and wire it up."_ [Agent setup guides](https://capgo.app/agents/?ref=plugin_webview_crash) · [Hosted MCP](https://capgo.app/docs/ai/mcp/?ref=plugin_webview_crash)
 
 <p align="center">
   <img
